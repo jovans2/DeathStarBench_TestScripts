@@ -88,6 +88,7 @@ class FrontendService(pb2_grpc.FrontendServicer):
         transport.close()
     
     def LambdaUser(self):
+        print("Call Lambda User")
         address = self.addresses["UserService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -96,6 +97,7 @@ class FrontendService(pb2_grpc.FrontendServicer):
         transport.open()
         req_id = uuid.uuid4().int & 0x7FFFFFFFFFFFFFFF
         myInd = self.lastId
+        print("My ind = " + str(myInd))
         self.lastId += 1
         client.RegisterUser(req_id, "first_name_"+str(myInd), "last_name_"+str(myInd), "username_"+str(myInd), "password_"+str(myInd), {})
         transport.close()
