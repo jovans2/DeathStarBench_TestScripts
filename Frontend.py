@@ -49,7 +49,7 @@ class FrontendService(pb2_grpc.FrontendServicer):
             ip_add = container.attrs['NetworkSettings']['Networks']['socialnetwork_default']['IPAddress']
             self.addresses[service] = ip_add
 
-    def LambdaText(self):
+    def LambdaText(self, message, response):
         address = self.addresses["TextService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -71,7 +71,12 @@ class FrontendService(pb2_grpc.FrontendServicer):
         client.ComposeText(req_id, text, {})
         transport.close()
 
-    def LambdaSGraph(self):
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
+
+    def LambdaSGraph(self, message, response):
         address = self.addresses["SocialGraphService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -86,8 +91,13 @@ class FrontendService(pb2_grpc.FrontendServicer):
         client.Follow(req_id, follower, followee, {})
 
         transport.close()
+
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
     
-    def LambdaUser(self):
+    def LambdaUser(self, message, response):
         print("Call Lambda User")
         address = self.addresses["UserService"]
         socket = TSocket.TSocket(address, 9090)
@@ -101,8 +111,13 @@ class FrontendService(pb2_grpc.FrontendServicer):
         self.lastId += 1
         client.RegisterUser(req_id, "first_name_"+str(myInd), "last_name_"+str(myInd), "username_"+str(myInd), "password_"+str(myInd), {})
         transport.close()
+
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
     
-    def LambdaPstStr(self):
+    def LambdaPstStr(self, message, response):
         address = self.addresses["PostStorageService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -137,7 +152,12 @@ class FrontendService(pb2_grpc.FrontendServicer):
         client.StorePost(req_id, post, {})
         transport.close()
 
-    def LambdaUsrMnt(self):
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
+
+    def LambdaUsrMnt(self, message, response):
         address = self.addresses["UserMentionService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -156,8 +176,13 @@ class FrontendService(pb2_grpc.FrontendServicer):
         client.ComposeUserMentions(req_id, user_mentions, {})
 
         transport.close()
+
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
     
-    def LambdaHomeT(self):
+    def LambdaHomeT(self, message, response):
         address = self.addresses["HomeTimelineService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -189,8 +214,13 @@ class FrontendService(pb2_grpc.FrontendServicer):
         client.WriteHomeTimeline(req_id, post_id, user_id, timestamp, user_mentions, {})
 
         transport.close()
+
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
     
-    def LambdaCPost(self):
+    def LambdaCPost(self, message, response):
         address = self.addresses["ComposePostService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -222,7 +252,12 @@ class FrontendService(pb2_grpc.FrontendServicer):
         client.ComposePost(int(req_id), "username_"+str(user_id), int(user_id), text, media_ids, media_types, post_type, {})
         transport.close()
 
-    def LambdaUrlShort(self):
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
+
+    def LambdaUrlShort(self, message, response):
         address = self.addresses["UrlShortenService"]
         socket = TSocket.TSocket(address, 9090)
         transport = TTransport.TFramedTransport(socket)
@@ -241,6 +276,11 @@ class FrontendService(pb2_grpc.FrontendServicer):
         client.ComposeUrls(req_id, urls, {})
         
         transport.close()
+        
+        result = {'ret_num': 1}
+        response = pb2.MessageResponse(**result)
+
+        return response
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=100), options=[
