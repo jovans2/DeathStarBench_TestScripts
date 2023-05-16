@@ -33,5 +33,5 @@ class FrontendClient(object):
         return self.stub.LambdaUser(message)
 
 message = pb2.Message()
-client = FrontendClient("172.21.0.1",4900)
+client = FrontendClient(sys.argv[1],4900)
 print(client.lambda_user(message))
