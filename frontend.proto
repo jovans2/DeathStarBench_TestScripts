@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package frontend;
+
+service Frontend{
+    rpc LambdaText(Message) returns (MessageResponse) {}
+    rpc LambdaSGraph(Message) returns (MessageResponse) {}
+    rpc LambdaUser(Message) returns (MessageResponse) {}
+    rpc LambdaPstStr(Message) returns (MessageResponse) {}
+    rpc LambdaUsrMnt(Message) returns (MessageResponse) {}
+    rpc LambdaHomeT(Message) returns (MessageResponse) {}
+    rpc LambdaCPost(Message) returns (MessageResponse) {}
+    rpc LambdaUrlShort(Message) returns (MessageResponse) {}
+}
+
+message Message{
+    int64 req_num = 1;
+}
+
+message MessageResponse{
+    int64 ret_num = 1;
+}
