@@ -46,7 +46,7 @@ class FrontendService(pb2_grpc.FrontendServicer):
         for service in services:
             client = docker.DockerClient()
             container = client.containers.get(service)
-            ip_add = container.attrs['NetworkSettings']['IPAddress']
+            ip_add = container.attrs['NetworkSettings']['Networks']['socialnetwork_default']['IPAddress']
             self.addresses[service] = ip_add
 
     def LambdaText(self):
