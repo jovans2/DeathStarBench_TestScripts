@@ -66,9 +66,17 @@ def EnforceActivityWindow(start_time, end_time, instance_events):
   return events_iit
 
 def lambda_call(lambda_m, frontend_cl):
+    global times
     method = getattr(frontend_cl, lambda_m)
     message = pb2.Message()
-    method(message)
+    try:
+        t1 = time.time()
+        method(message)
+        t2 = time.time()
+        times.append(t2-t1)
+    except Exception as e:
+        #print(e)
+        pass
     return 0
 
 method_list = [func for func in dir(FrontendClient) if callable(getattr(FrontendClient, func))]
@@ -93,22 +101,49 @@ np.random.seed(seed)
 beta = 1.0/rate
 oversampling_factor = 2
 inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*rate)))
-instance_events = EnforceActivityWindow(0,duration,inter_arrivals)
+instance_events_normal = EnforceActivityWindow(0,duration,inter_arrivals)
+
+inter_arrivals_slow = []
+beta = 1.0/(rate/2)
+inter_arrivals_slow = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*(rate/2))))
+instance_events_slow = EnforceActivityWindow(0,duration,inter_arrivals_slow)
+
+inter_arrivals_fast = []
+beta = 1.0/(rate*2)
+inter_arrivals_fast = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*(rate*2))))
+instance_events_fast = EnforceActivityWindow(0,duration,inter_arrivals_fast)
+
+instance_events_list = [instance_events_slow, instance_events_normal, instance_events_fast]
+
+
+#instance_events_list = [instance_events_normal]
 
 for lambda_m in lambdas:
-    after_time, before_time = 0, 0
-    st = 0
-    tids = []
-    for t in instance_events:
-        st = st + t - (after_time - before_time)
-        before_time = time.time()
-        if st > 0:
-            time.sleep(st)
-        frontend_cl = FrontendClient(random.choice(VM_addresses), 4900)
-        thread = threading.Thread(target=lambda_call, args=(lambda_m, frontend_cl, ))
-        thread.start()
-        tids.append(thread)
-        after_time = time.time()
+    print(lambda_m)
+    time.sleep(5)
+    for instance_events in instance_events_list:
+        print(instance_events_list.index(instance_events))
+        time.sleep(5)
+        after_time, before_time = 0, 0
+        st = 0
+        tids = []
+        times = []
+        for t in instance_events:
+            st = st + t - (after_time - before_time)
+            before_time = time.time()
+            if st > 0:
+                time.sleep(st)
+            frontend_cl = FrontendClient(random.choice(VM_addresses), 4900)
+            thread = threading.Thread(target=lambda_call, args=(lambda_m, frontend_cl, ))
+            thread.start()
+            tids.append(thread)
+            after_time = time.time()
 
-    for tid in tids:
-        tid.join()
+        for tid in tids:
+            tid.join()
+
+        print("P50 = ", round(1000*np.percentile(times,50),2), "ms")
+        print("P90 = ", round(1000*np.percentile(times,90),2), "ms")
+        print("P99 = ", round(1000*np.percentile(times,99),2), "ms")
+        # time.sleep(20)
+
