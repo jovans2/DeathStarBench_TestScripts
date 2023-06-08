@@ -95,6 +95,13 @@ num_VMs = int(sys.argv[3])
 VM_addresses = []
 for indVM in range(num_VMs):
     VM_addresses.append(sys.argv[4+indVM])
+VM_probs = []
+
+curr = 0
+for indVM in range(num_VMs):
+    curr += float(sys.argv[4 + num_VMs + indVM])
+    VM_probs.append(curr)
+
 # generate Poisson's distribution of events 
 inter_arrivals = []
 np.random.seed(seed)
@@ -109,31 +116,62 @@ inter_arrivals_slow = list(np.random.exponential(scale=beta, size=int(oversampli
 instance_events_slow = EnforceActivityWindow(0,duration,inter_arrivals_slow)
 
 inter_arrivals_fast = []
-beta = 1.0/(rate*2)
-inter_arrivals_fast = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*(rate*2))))
+beta = 1.0/(rate*1.7)
+inter_arrivals_fast = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*(rate*1.7))))
 instance_events_fast = EnforceActivityWindow(0,duration,inter_arrivals_fast)
 
 instance_events_list = [instance_events_slow, instance_events_normal, instance_events_fast]
 
+inter_arrivals = []
+np.random.seed(seed)
+rate = 100
+beta = 1.0/rate
+oversampling_factor = 2
+inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*rate)))
+instance_events_normal_cpost = EnforceActivityWindow(0,duration,inter_arrivals)
 
-#instance_events_list = [instance_events_normal]
+inter_arrivals_slow = []
+rate = 250
+beta = 1.0/(rate)
+inter_arrivals_slow = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*(rate))))
+instance_events_slow_cpost = EnforceActivityWindow(0,duration,inter_arrivals_slow)
+
+inter_arrivals_fast = []
+rate = 500
+beta = 1.0/(rate)
+inter_arrivals_fast = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*(rate))))
+instance_events_fast_cpost = EnforceActivityWindow(0,duration,inter_arrivals_fast)
+
+
+instance_events_list_cpost = [instance_events_slow_cpost, instance_events_normal_cpost, instance_events_fast_cpost]
 
 for lambda_m in lambdas:
     print(lambda_m)
     time.sleep(5)
-    for instance_events in instance_events_list:
-        print(instance_events_list.index(instance_events))
+    my_list = instance_events_list
+    if "cpost" in lambda_m:
+        my_list = instance_events_list_cpost
+    for instance_events in my_list:
+        print(my_list.index(instance_events))
         time.sleep(5)
         after_time, before_time = 0, 0
         st = 0
         tids = []
         times = []
+        #print(len(instance_events))
         for t in instance_events:
             st = st + t - (after_time - before_time)
             before_time = time.time()
             if st > 0:
                 time.sleep(st)
-            frontend_cl = FrontendClient(random.choice(VM_addresses), 4900)
+            chosen_ind = 0
+            rand_num = random.random()
+            while (rand_num > VM_probs[chosen_ind]):
+                if chosen_ind == num_VMs - 1:
+                    break
+                chosen_ind += 1
+            #print(chosen_ind)
+            frontend_cl = FrontendClient(VM_addresses[chosen_ind], 4900)
             thread = threading.Thread(target=lambda_call, args=(lambda_m, frontend_cl, ))
             thread.start()
             tids.append(thread)
