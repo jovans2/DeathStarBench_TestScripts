@@ -76,6 +76,45 @@ def lambda_call(lambda_m, frontend_cl):
         pass
     return 0
 
+# Warm-up
+lambdas = ["lambda_usr", "lambda_sgraph", "lambda_text", "lambda_usrmnt", "lambda_urlshort",
+           "lambda_pststr", "lambda_cpost", "lambda_homet"]
+duration = 20
+seed = 100
+rates = [200]
+# generate Poisson's distribution of events
+instance_events_list = []
+for rate in rates:
+    np.random.seed(seed)
+    beta = 1.0/rate
+    oversampling_factor = 2
+    inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*rate)))
+    instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
+for myLambda in lambdas:
+    time.sleep(10)
+    for instance_events in instance_events_list:
+        print(instance_events_list.index(instance_events))
+        after_time, before_time = 0, 0
+        st = 0
+        tids = []
+        times = []
+        for t in instance_events:
+            st = st + t - (after_time - before_time)
+            before_time = time.time()
+            if st > 0:
+                time.sleep(st)
+            frontend_cl = FrontendClient("127.0.0.1", 4900)
+            thread = threading.Thread(target=lambda_call, args=(myLambda, frontend_cl, ))
+            thread.start()
+            tids.append(thread)
+            after_time = time.time()
+
+        for tid in tids:
+            tid.join()
+
+        print("P50 = ", round(1000*np.percentile(times, 50), 2), "ms")
+        print("P90 = ", round(1000*np.percentile(times, 90), 2), "ms")
+        print("P99 = ", round(1000*np.percentile(times, 99), 2), "ms")
 
 myLambda = sys.argv[1]
 duration = 20
@@ -90,7 +129,6 @@ for rate in rates:
     oversampling_factor = 2
     inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor*duration*rate)))
     instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
-
 
 for instance_events in instance_events_list:
     print(instance_events_list.index(instance_events))
