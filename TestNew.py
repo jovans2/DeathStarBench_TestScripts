@@ -40,13 +40,11 @@ from thrift.protocol import TBinaryProtocol
 addresses = {}
 services = ["TextService", "SocialGraphService", "UserService", "UserMentionService", "UrlShortenService",
             "PostStorageService", "ComposePostService", "HomeTimelineService"]
-services = ["socialnetwork_social-graph-service_1"]
 for service in services:
     client = docker.DockerClient()
     container = client.containers.get(service)
     ip_add = container.attrs['NetworkSettings']['Networks']['socialnetwork_default']['IPAddress']
     addresses[service] = ip_add
-
 
 def EnforceActivityWindow(start_time, end_time, instance_events):
     events_iit = []
@@ -63,7 +61,7 @@ def EnforceActivityWindow(start_time, end_time, instance_events):
 
 def lambda_call_sgraph(queueL):
     t1 = time.time()
-    address = addresses["socialnetwork_social-graph-service_1"]
+    address = addresses["SocialGraphService"]
     socket = TSocket.TSocket(address, 9090)
     transport = TTransport.TFramedTransport(socket)
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
@@ -86,7 +84,7 @@ def lambda_call_sgraph(queueL):
 
 def lambda_call_user(queueL):
     t1 = time.time()
-    address = addresses["socialnetwork_user-service_1"]
+    address = addresses["UserService"]
     socket = TSocket.TSocket(address, 9090)
     transport = TTransport.TFramedTransport(socket)
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
@@ -103,9 +101,9 @@ def lambda_call_user(queueL):
     queueL.put(t2 - t1)
     return 0
 
+
 duration = 10
 seed = 100
-rates = [20, 50, 80, 100, 120, 150, 180, 200, 220, 250, 280, 300, 320, 350, 380, 400, 420, 450, 480, 500]
 rates = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
 # generate Poisson's distribution of events
 instance_events_list = []
