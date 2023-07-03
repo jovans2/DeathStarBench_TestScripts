@@ -156,6 +156,34 @@ services:
     # ports:
     #   - 27018:27017
     restart: always
+  
+  social-graph1-mongodb:
+    image: mongo:4.4.6
+    hostname: social-graph1-mongodb
+    # ports:
+    #   - 27018:27017
+    restart: always
+  
+  social-graph2-mongodb:
+    image: mongo:4.4.6
+    hostname: social-graph2-mongodb
+    # ports:
+    #   - 27018:27017
+    restart: always
+  
+  social-graph3-mongodb:
+    image: mongo:4.4.6
+    hostname: social-graph3-mongodb
+    # ports:
+    #   - 27018:27017
+    restart: always
+  
+  social-graph4-mongodb:
+    image: mongo:4.4.6
+    hostname: social-graph4-mongodb
+    # ports:
+    #   - 27018:27017
+    restart: always
 
   social-graph-redis:
     image: redis
