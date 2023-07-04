@@ -23,6 +23,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo apt-get install python3-pip -y
 pip3 install docker
 pip3 install numpy
+pip3 install thrift
 
 git clone https://github.com/jovans2/DeathStarBench_TestScripts
 git clone https://github.com/delimitrou/DeathStarBench

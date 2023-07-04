@@ -95,6 +95,7 @@ def HealthThread():
 
     while True:
         (clientSocket, _) = serverSocket.accept()
+        clientSocket.recv(1024)
         threading.Thread(target=sendOK, args=(clientSocket,)).start()
 
 def TailSLOThread():
