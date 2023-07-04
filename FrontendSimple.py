@@ -108,6 +108,8 @@ def TailSLOThread():
         currTimes = []
         while not queueTimes.empty():
             currTimes.append(queueTimes.get())
+        if len(currTimes) == 0:
+            continue
         currentTail = np.percentile(currTimes, 95)
         if currentTail > threshold2 * SLO:
             print("Need to scale out!")
