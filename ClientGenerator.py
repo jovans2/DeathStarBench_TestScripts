@@ -26,8 +26,7 @@ def EnforceActivityWindow(start_time, end_time, instance_events):
 def lambda_call_sgraph(queue_l):
     t1 = time.time()
     addr = random.choice(addresses)
-    rsp = requests.get('http://' + addr + ":9999")
-    print(rsp.text)
+    requests.get('http://' + addr + ":9999")
     t2 = time.time()
     queue_l.put(t2 - t1)
     return 0
