@@ -38,27 +38,30 @@ with open(lblPath, 'r') as f:
     labels = [l.rstrip() for l in f]
 
 def lambda_handler(queueL):
-    blobName = "img10.jpg"
+    t1 = time.time()
+    for indI in range(4):
+        blobName = "img10.jpg"
 
-    Image.open(blobName)
+        Image.open(blobName)
 
-    # format image as (batch, RGB, width, height)
-    img = mx.image.imread(blobName)
-    img = mx.image.imresize(img, 224, 224) # resize
-    img = mx.image.color_normalize(img.astype(dtype='float32')/255,
-                                mean=mx.nd.array([0.485, 0.456, 0.406]),
-                                std=mx.nd.array([0.229, 0.224, 0.225])) # normalize
-    img = img.transpose((2, 0, 1)) # channel first
-    img = img.expand_dims(axis=0) # batchify
+        # format image as (batch, RGB, width, height)
+        img = mx.image.imread(blobName)
+        img = mx.image.imresize(img, 224, 224) # resize
+        img = mx.image.color_normalize(img.astype(dtype='float32')/255,
+                                    mean=mx.nd.array([0.485, 0.456, 0.406]),
+                                    std=mx.nd.array([0.229, 0.224, 0.225])) # normalize
+        img = img.transpose((2, 0, 1)) # channel first
+        img = img.expand_dims(axis=0) # batchify
 
-    prob = net(img).softmax() # predict and normalize output
-    idx = prob.topk(k=5)[0] # get top 5 result
-    inference = ''
-    for i in idx:
-        i = int(i.asscalar())
-        inference = inference + 'With prob = %.5f, it contains %s' % (prob[0,i].asscalar(), labels[i]) + '. '
-    queueL.put(inference)
-    return inference
+        prob = net(img).softmax() # predict and normalize output
+        idx = prob.topk(k=5)[0] # get top 5 result
+        inference = ''
+        for i in idx:
+            i = int(i.asscalar())
+            inference = inference + 'With prob = %.5f, it contains %s' % (prob[0,i].asscalar(), labels[i]) + '. '
+    t2 = time.time()
+    queueL.put(t2-t1)
+    return "Ok"
 
 def requestInference(queueG):
     queueC = multiprocessing.Queue()
@@ -89,7 +92,7 @@ for repetition in range(0, 1):
                 before_time = time.time()
                 if st > 0:
                     time.sleep(st)
-                thread = multiprocessing.Process(target=requestInference, args=(queue,))
+                thread = multiprocessing.Process(target=lambda_handler, args=(queue,))
                 thread.start()
                 tids.append(thread)
                 after_time = time.time()
