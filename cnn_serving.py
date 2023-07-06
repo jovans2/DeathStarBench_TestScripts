@@ -77,6 +77,7 @@ def requestInference(queueG):
 
 for repetition in range(0, 200):
     for instance_events in instance_events_list:
+        time.sleep(300)
         for inner_loop in range(6):
             queue = multiprocessing.Queue()
             print(instance_events_list.index(instance_events))
