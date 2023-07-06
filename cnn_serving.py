@@ -21,7 +21,7 @@ def EnforceActivityWindow(start_time, end_time, instance_events):
 
 duration = 100
 seed = 100
-rates = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
+rates = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
 # generate Poisson's distribution of events
 instance_events_list = []
 for rate in rates:
@@ -36,16 +36,15 @@ net.hybridize(static_alloc=True, static_shape=True)
 lblPath = gluon.utils.download('http://data.mxnet.io/models/imagenet/synset.txt',path='/tmp/')
 with open(lblPath, 'r') as f:
     labels = [l.rstrip() for l in f]
+blobName = "img10.jpg"
+imgGl = mx.image.imread(blobName)
 
 def lambda_handler(queueL):
+    global imgGl
     t1 = time.time()
     for indI in range(4):
-        blobName = "img10.jpg"
-
-        Image.open(blobName)
-
         # format image as (batch, RGB, width, height)
-        img = mx.image.imread(blobName)
+        img = imgGl
         img = mx.image.imresize(img, 224, 224) # resize
         img = mx.image.color_normalize(img.astype(dtype='float32')/255,
                                     mean=mx.nd.array([0.485, 0.456, 0.406]),
@@ -76,12 +75,12 @@ def requestInference(queueG):
     t2 = time.time()
     queueG.put(t2-t1)
 
-for repetition in range(0, 1):
+for repetition in range(0, 200):
     for instance_events in instance_events_list:
         for inner_loop in range(6):
             queue = multiprocessing.Queue()
             print(instance_events_list.index(instance_events))
-            time.sleep(10)
+            # time.sleep(10)
             after_time, before_time = 0, 0
             st = 0
             tids = []
@@ -92,18 +91,24 @@ for repetition in range(0, 1):
                 before_time = time.time()
                 if st > 0:
                     time.sleep(st)
-                thread = multiprocessing.Process(target=lambda_handler, args=(queue,))
-                thread.start()
-                tids.append(thread)
+                # thread = multiprocessing.Process(target=lambda_handler, args=(queue,))
+                childPid = os.fork()
+                if childPid == 0:
+                    lambda_handler(queue)
+                    exit(0)
+                else:
+                    tids.append(childPid)
+                # thread.start()
+                # tids.append(thread)
                 after_time = time.time()
                 indT += 1
 
             done = 0
             for tid in tids:
                 done += 1
-                tid.join(5)
+                os.waitpid(tid, 0)
 
-            for tid in tids:
+            while not queue.empty():
                 times.append(queue.get())
 
             print("P50 = ", round(1000 * np.percentile(times, 50), 2), "ms")
