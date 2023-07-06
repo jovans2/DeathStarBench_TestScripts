@@ -264,6 +264,8 @@ services:
   post-storage-memcached:
     image: memcached
     hostname: post-storage-memcached
+    logging:
+      driver: "none"
     #    ports:
     #      - 11212:11211
     restart: always
@@ -271,6 +273,8 @@ services:
   post-storage-mongodb:
     image: mongo:4.4.6
     hostname: post-storage-mongodb
+    logging:
+      driver: "none"
     #    ports:
     #      - 27019:27017
     restart: always
@@ -293,6 +297,8 @@ services:
   user-timeline-redis:
     image: redis
     hostname: user-timeline-redis
+    logging:
+      driver: "none"
     #    ports:
     #      - 6383:6379
     restart: always
@@ -300,6 +306,8 @@ services:
   user-timeline-mongodb:
     image: mongo:4.4.6
     hostname: user-timeline-mongodb
+    logging:
+      driver: "none"
     #    ports:
     #      - 27020:27017
     restart: always
@@ -322,6 +330,8 @@ services:
   url-shorten-memcached:
     image: memcached
     hostname: url-shorten-memcached
+    logging:
+      driver: "none"
     #    ports:
     #      - 11213:11211
     restart: always
@@ -329,6 +339,8 @@ services:
   url-shorten-mongodb:
     image: mongo:4.4.6
     hostname: url-shorten-mongodb
+    logging:
+      driver: "none"
     #    ports:
     #      - 27021:27017
     restart: always
@@ -339,6 +351,8 @@ services:
     #    ports:
     #      - 10005:9090
     restart: always
+    logging:
+      driver: "none"
     depends_on:
       jaeger-agent:
         condition: service_started
@@ -351,6 +365,8 @@ services:
   user-memcached:
     image: memcached
     hostname: user-memcached
+    logging:
+      driver: "none"
     #    ports:
     #      - 11214:11211
     restart: always
@@ -358,6 +374,8 @@ services:
   user-mongodb:
     image: mongo:4.4.6
     hostname: user-mongodb
+    logging:
+      driver: "none"
     # ports:
     #   - 27023:27017
     restart: always
@@ -367,6 +385,8 @@ services:
     hostname: media-service
     #    ports:
     #      - 10006:9090
+    logging:
+      driver: "none"
     depends_on:
       jaeger-agent:
         condition: service_started
@@ -380,6 +400,8 @@ services:
   media-memcached:
     image: memcached
     hostname: media-memcached
+    logging:
+      driver: "none"
     #    ports:
     #      - 11215:11211
     restart: always
@@ -387,6 +409,8 @@ services:
   media-mongodb:
     image: mongo:4.4.6
     hostname: media-mongodb
+    logging:
+      driver: "none"
     #    ports:
     #      - 27024:27017
     restart: always
@@ -443,28 +467,13 @@ services:
     volumes:
       - ./config:/social-network-microservices/config
 
-  nginx-thrift:
-    image: yg397/openresty-thrift:xenial
-    hostname: nginx-thrift
-    ports:
-      - 8080:8080
-    depends_on:
-      jaeger-agent:
-        condition: service_started
-    restart: always
-    volumes:
-      - ./nginx-web-server/lua-scripts:/usr/local/openresty/nginx/lua-scripts
-      - ./nginx-web-server/pages:/usr/local/openresty/nginx/pages
-      - ./nginx-web-server/conf/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf
-      - ./nginx-web-server/jaeger-config.json:/usr/local/openresty/nginx/jaeger-config.json
-      - ./gen-lua:/gen-lua
-      - ./docker/openresty-thrift/lua-thrift:/usr/local/openresty/lualib/thrift
-
   media-frontend:
     image: yg397/media-frontend:xenial
     hostname: media-frontend
     ports:
       - 8081:8080
+    logging:
+      driver: "none"
     restart: always
     depends_on:
       jaeger-agent:
