@@ -13,7 +13,7 @@ using std::chrono::system_clock;
 
 int foo(int Z)
 {
-  auto start = high_resolution_clock::now()
+  auto start = high_resolution_clock::now();
   int suma = 0;
   for (int k = 0; k < 10; k++)
     for (int i = 0; i < 10000; i++)
