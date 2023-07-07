@@ -52,7 +52,7 @@ double* poissonArrival(double avgArr, double duration)
 }
 
 int main(){
-    double allArrivals[] = {poissonArrival(100, 10)};
+    double* allArrivals = poissonArrival(100, 10);
     thread th1(foo, 3);
     th1.join();
     return 0;
