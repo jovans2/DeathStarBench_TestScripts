@@ -34,7 +34,7 @@ double* poissonArrival(double avgArr, double duration)
     std::random_device rd; // uniformly-distributed integer random number generator
     std::mt19937 rng (rd ()); // mt19937: Pseudo-random number generation
 
-    double averageArrival = 15;
+    double averageArrival = avgArr;
     double lamda = 1 / averageArrival;
     std::exponential_distribution<double> exp (lamda);
 
