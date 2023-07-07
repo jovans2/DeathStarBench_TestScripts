@@ -21,7 +21,7 @@ int foo(int Z)
           {
             suma += (i+1) * (j+1) + k;
           }
-  auto stop = high_resolution_clock::now()
+  auto stop = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(stop-start).count();
   std::cout << "Duration = " << duration << std::endl;
   return suma;
