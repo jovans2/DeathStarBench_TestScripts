@@ -53,6 +53,9 @@ double* poissonArrival(double avgArr, double duration)
 
 int main(){
     double* allArrivals = poissonArrival(100, 10);
+    for(int i=0;i<1000;i++){
+        std::cout << allArrivals[i] << std::endl;
+    }
     thread th1(foo, 3);
     th1.join();
     return 0;
