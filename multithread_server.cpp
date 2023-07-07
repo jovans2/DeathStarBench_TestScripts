@@ -41,10 +41,12 @@ double* poissonArrival(double avgArr, double duration)
     double sumArrivalTimes=0;
     double newArrivalTime;
 
+    int i = 0;
     while (sumArrivalTimes < duration){
         newArrivalTime=  exp.operator() (rng);// generates the next random number in the distribution
         sumArrivalTimes  = sumArrivalTimes + newArrivalTime;
         allArrivals[i] = sumArrivalTimes;
+        i++;
     }
     return allArrivals;
 }
