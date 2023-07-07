@@ -15,7 +15,7 @@ int foo(int Z)
 {
   auto start = high_resolution_clock::now();
   int suma = 0;
-  for (int k = 0; k < 1; k++)
+  for (int k = 0; k < 3; k++)
     for (int i = 0; i < 10000; i++)
         for (int j = 0; j < 10000; j++)
           {
