@@ -2,11 +2,18 @@
 #include <iterator>
 #include <random>
 #include <thread>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
+
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
+using std::chrono::system_clock;
 
 int foo(int Z)
 {
+  auto start = high_resolution_clock::now()
   int suma = 0;
   for (int k = 0; k < 10; k++)
     for (int i = 0; i < 10000; i++)
@@ -14,6 +21,9 @@ int foo(int Z)
           {
             suma += (i+1) * (j+1) + k;
           }
+  auto stop = high_resolution_clock::now()
+  auto duration = duration_cast<microseconds>(stop-start).count();
+  std::cout << "Duration = " << duration << std::endl;
   return suma;
 }
 
