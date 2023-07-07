@@ -351,8 +351,6 @@ services:
     #    ports:
     #      - 10005:9090
     restart: always
-    logging:
-      driver: "none"
     depends_on:
       jaeger-agent:
         condition: service_started
@@ -466,6 +464,23 @@ services:
     entrypoint: HomeTimelineService
     volumes:
       - ./config:/social-network-microservices/config
+
+  nginx-thrift:
+    image: yg397/openresty-thrift:xenial
+    hostname: nginx-thrift
+    ports:
+      - 8080:8080
+    depends_on:
+      jaeger-agent:
+        condition: service_started
+    restart: always
+    volumes:
+      - ./nginx-web-server/lua-scripts:/usr/local/openresty/nginx/lua-scripts
+      - ./nginx-web-server/pages:/usr/local/openresty/nginx/pages
+      - ./nginx-web-server/conf/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf
+      - ./nginx-web-server/jaeger-config.json:/usr/local/openresty/nginx/jaeger-config.json
+      - ./gen-lua:/gen-lua
+      - ./docker/openresty-thrift/lua-thrift:/usr/local/openresty/lualib/thrift
 
   media-frontend:
     image: yg397/media-frontend:xenial
