@@ -27,9 +27,9 @@ int foo(int Z)
   return suma;
 }
 
-double* poissonArrival(double avgArr, int numReqs)
+double* poissonArrival(double avgArr, double duration)
 {
-    double allArrivals[numReqs];
+    double allArrivals[int(duration*avgArr*2)];
     // seed the RNG
     std::random_device rd; // uniformly-distributed integer random number generator
     std::mt19937 rng (rd ()); // mt19937: Pseudo-random number generation
@@ -41,16 +41,16 @@ double* poissonArrival(double avgArr, int numReqs)
     double sumArrivalTimes=0;
     double newArrivalTime;
 
-    for (int i = 0; i < numReqs; ++i)
-    {
-    newArrivalTime=  exp.operator() (rng);// generates the next random number in the distribution
-    sumArrivalTimes  = sumArrivalTimes + newArrivalTime;
-    allArrivals[i] = sumArrivalTimes;
+    while (sumArrivalTimes < duration){
+        newArrivalTime=  exp.operator() (rng);// generates the next random number in the distribution
+        sumArrivalTimes  = sumArrivalTimes + newArrivalTime;
+        allArrivals[i] = sumArrivalTimes;
     }
     return allArrivals;
 }
 
 int main(){
+    double[2000] allArrivals = poissonArrival(100, 10)
     thread th1(foo, 3);
     th1.join();
     return 0;
