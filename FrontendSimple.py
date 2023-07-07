@@ -13,16 +13,29 @@ import time
 import numpy as np
 
 from social_network import SocialGraphService
+from social_network import UserService
 
 from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
+from opencensus.stats import aggregation as aggregation_module
+from opencensus.stats import measure as measure_module
+from opencensus.stats import stats as stats_module
+from opencensus.stats import view as view_module
+from opencensus.tags import tag_map as tag_map_module
+from opencensus.tags import tag_key as tag_key_module
+from opencensus.tags import tag_value as tag_value_module
+from datetime import datetime
+from opencensus.ext.azure import metrics_exporter
+
 services = ["socialnetwork_social-graph-service_1", "socialnetwork_social-graph-service-first_1", "socialnetwork_social-graph-service-second_1",
             "socialnetwork_social-graph-service-third_1", "socialnetwork_social-graph-service-fourth_1", "socialnetwork_social-graph-service-fifth_1",
             "socialnetwork_social-graph-service-sixth_1", "socialnetwork_social-graph-service-seventh_1", "socialnetwork_social-graph-service-eight_1",
             "socialnetwork_social-graph-service-ninth_1"]
+services = ["socialnetwork_user-service_1"]
+
 addresses = {}
 for service in services:
     client = docker.DockerClient()
@@ -31,28 +44,74 @@ for service in services:
     addresses[service] = ip_add
 queueTimes = multiprocessing.Queue()
 
-def lambda_call_sgraph():
+m_latency_ms = measure_module.MeasureFloat("repl/latency", "The latency in milliseconds per DSB request", "ms")
+
+stats = stats_module.stats
+view_manager = stats.view_manager
+stats_recorder = stats.stats_recorder
+
+# prompt_measure = measure_module.MeasureInt("prompts", "number of prompts", "prompts")
+# prompt_view = view_module.View("prompt view", "number of prompts", [], prompt_measure, aggregation_module.CountAggregation())
+
+# view_manager.register_view(prompt_view)
+mmap = stats_recorder.new_measurement_map()
+tmap = tag_map_module.TagMap()
+
+# Create the tag key
+key_method = tag_key_module.TagKey("method")
+# Create the status key
+key_status = tag_key_module.TagKey("status")
+# Create the error key
+key_error = tag_key_module.TagKey("error")
+
+latency_view = view_module.View("demo_latency", "The distribution of the latencies",
+    [key_method, key_status, key_error],
+    m_latency_ms,
+    # Latency in buckets:
+    # [>=0ms, >=25ms, >=50ms, >=75ms, >=100ms, >=200ms, >=400ms, >=600ms, >=800, >=1000]
+    aggregation_module.DistributionAggregation([0, 25, 50, 75, 100, 200, 400, 600, 800, 1000]))
+
+# exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/')
+exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a')
+
+view_manager.register_exporter(exporter)
+view_manager.register_view(latency_view)
+
+def lambda_call_user():
     global addresses
     global queueTimes
-
+    
     t1 = time.time()
     address = addresses[random.choice(services)]
     socketC = TSocket.TSocket(address, 9090)
     transport = TTransport.TFramedTransport(socketC)
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
-    clientC = SocialGraphService.Client(protocol)
+    clientC = UserService.Client(protocol)
 
     follower = random.randint(1, 80000)
-    followed = random.randint(1, 80000)
-    while followed == follower:
-        followed = random.randint(1, 80000)
-
+    
     transport.open()
     req_id = uuid.uuid4().int & (1 << 32)
-    clientC.Follow(req_id, follower, followed, {})
+    clientC.Login(req_id, "user_"+str(follower), "pass_"+str(follower), {})
 
     transport.close()
     t2 = time.time()
+
+    mmap = stats_recorder.new_measurement_map()
+    end_ms = (t2 - t1) * 1000.0 # Seconds to milliseconds
+
+    # Record the latency
+    mmap.measure_float_put(m_latency_ms, end_ms)
+
+    tmap.insert(key_method, tag_value_module.TagValue("repl"))
+    tmap.insert(key_status, tag_value_module.TagValue("OK"))
+
+    # Insert the tag map finally
+    mmap.record(tmap)
+    metrics = list(mmap.measure_to_view_map.get_metrics(datetime.utcnow()))
+    print("Latency = ", end_ms)
+    print(metrics)
+
     queueTimes.put(t2-t1)
     return 0
 
@@ -114,12 +173,16 @@ def TailSLOThread():
         currentTail = np.percentile(currTimes, 95)
         if currentTail > threshold2 * SLO:
             print("Need to scale out!")
+            # mmap.measure_int_put(prompt_measure, 1)
+            # mmap.record(tmap)
+            # metrics = list(mmap.measure_to_view_map.get_metrics(datetime.utcnow()))
+            # print(metrics[0].time_series[0].points[0])
         elif currentTail > threshold1 * SLO:
             print("Need to scale up!")
 
 def serveRequest(clientSocket):
     clientSocket.recv(1024)
-    lambda_call_sgraph()
+    lambda_call_user()
     sendOK(clientSocket)
     return 0
 
