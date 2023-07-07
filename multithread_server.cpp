@@ -27,8 +27,9 @@ int foo(int Z)
   return suma;
 }
 
-int poissonArrival(double avgArr, int numReqs)
+double* poissonArrival(double avgArr, int numReqs)
 {
+    double allArrivals[numReqs];
     // seed the RNG
     std::random_device rd; // uniformly-distributed integer random number generator
     std::mt19937 rng (rd ()); // mt19937: Pseudo-random number generation
@@ -44,7 +45,9 @@ int poissonArrival(double avgArr, int numReqs)
     {
     newArrivalTime=  exp.operator() (rng);// generates the next random number in the distribution
     sumArrivalTimes  = sumArrivalTimes + newArrivalTime;
+    allArrivals[i] = sumArrivalTimes;
     }
+    return allArrivals;
 }
 
 int main(){
