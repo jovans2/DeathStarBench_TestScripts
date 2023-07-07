@@ -29,7 +29,7 @@ int foo(int Z)
 
 double* poissonArrival(double avgArr, double duration)
 {
-    double allArrivals[int(duration*avgArr*2)];
+    double* allArrivals = new double(int(duration*avgArr*2));
     // seed the RNG
     std::random_device rd; // uniformly-distributed integer random number generator
     std::mt19937 rng (rd ()); // mt19937: Pseudo-random number generation
