@@ -5,12 +5,16 @@
 
 using namespace std;
 
-void foo(int Z)
+int foo(int Z)
 {
-  for (int i = 0; i < Z; i++)
-  {
-    std::cout << "Thread using function pointer as callable\n";
-  }
+  int suma = 0;
+  for (int k = 0; k < 10; k++)
+    for (int i = 0; i < 10000; i++)
+        for (int j = 0; j < 10000; j++)
+          {
+            suma += (i+1) * (j+1) + k;
+          }
+  return suma;
 }
 
 int poissonArrival(double avgArr, int numReqs)
