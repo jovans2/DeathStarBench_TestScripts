@@ -31,9 +31,11 @@ def lambda_call_sgraph(queue_l):
     queue_l.put(t2 - t1)
     return 0
 
-duration = 10
+duration = 100
 seed = 100
 rates = [10, 50, 100]
+rate = [250]
+
 # generate Poisson's distribution of events
 instance_events_list = []
 for rate in rates:
@@ -47,7 +49,7 @@ for repetition in range(0, 1):
     for instance_events in instance_events_list:
         queue = multiprocessing.Queue()
         print(instance_events_list.index(instance_events))
-        time.sleep(10)
+        #time.sleep(10)
         after_time, before_time = 0, 0
         st = 0
         tids = []
@@ -58,7 +60,8 @@ for repetition in range(0, 1):
             before_time = time.time()
             if st > 0:
                 time.sleep(st)
-            thread = threading.Thread(target=lambda_call_sgraph, args=(queue,))
+            #thread = threading.Thread(target=lambda_call_sgraph, args=(queue,))
+            thread = multiprocessing.Process(target=lambda_call_sgraph, args=(queue,))
             thread.start()
             tids.append(thread)
             after_time = time.time()
