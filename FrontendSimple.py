@@ -50,32 +50,36 @@ stats = stats_module.stats
 view_manager = stats.view_manager
 stats_recorder = stats.stats_recorder
 
-# prompt_measure = measure_module.MeasureInt("prompts", "number of prompts", "prompts")
-# prompt_view = view_module.View("prompt view", "number of prompts", [], prompt_measure, aggregation_module.CountAggregation())
+prompt_measure = measure_module.MeasureInt("prompts", "number of prompts", "prompts")
+prompt_view = view_module.View("prompt view", "number of prompts", [], prompt_measure, aggregation_module.CountAggregation())
 
-# view_manager.register_view(prompt_view)
+view_manager.register_view(prompt_view)
 mmap = stats_recorder.new_measurement_map()
 tmap = tag_map_module.TagMap()
+mmap1 = stats_recorder.new_measurement_map()
+tmap1 = tag_map_module.TagMap()
 
 # Create the tag key
-key_method = tag_key_module.TagKey("method")
+# key_method = tag_key_module.TagKey("method")
 # Create the status key
-key_status = tag_key_module.TagKey("status")
+# key_status = tag_key_module.TagKey("status")
 # Create the error key
-key_error = tag_key_module.TagKey("error")
+# key_error = tag_key_module.TagKey("error")
 
 latency_view = view_module.View("demo_latency", "The distribution of the latencies",
-    [key_method, key_status, key_error],
+    #[key_method, key_status, key_error],
+    [],
     m_latency_ms,
     # Latency in buckets:
     # [>=0ms, >=25ms, >=50ms, >=75ms, >=100ms, >=200ms, >=400ms, >=600ms, >=800, >=1000]
-    aggregation_module.DistributionAggregation([0, 25, 50, 75, 100, 200, 400, 600, 800, 1000]))
+    #aggregation_module.DistributionAggregation([0, 25, 50, 75, 100, 200, 400, 600, 800, 1000]))
+    aggregation_module.LastValueAggregation())
 
 # exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/')
-exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a')
+exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/')
 
-view_manager.register_exporter(exporter)
 view_manager.register_view(latency_view)
+view_manager.register_exporter(exporter)
 
 def lambda_call_user():
     global addresses
@@ -97,20 +101,19 @@ def lambda_call_user():
     transport.close()
     t2 = time.time()
 
-    mmap = stats_recorder.new_measurement_map()
     end_ms = (t2 - t1) * 1000.0 # Seconds to milliseconds
 
     # Record the latency
-    mmap.measure_float_put(m_latency_ms, end_ms)
+    # mmap1.measure_float_put(m_latency_ms, end_ms)
 
-    tmap.insert(key_method, tag_value_module.TagValue("repl"))
-    tmap.insert(key_status, tag_value_module.TagValue("OK"))
+    # tmap1.insert(key_method, tag_value_module.TagValue("repl"))
+    # tmap1.insert(key_status, tag_value_module.TagValue("OK"))
 
     # Insert the tag map finally
-    mmap.record(tmap)
-    metrics = list(mmap.measure_to_view_map.get_metrics(datetime.utcnow()))
-    print("Latency = ", end_ms)
-    print(metrics)
+    # mmap1.record(tmap1)
+    # metrics1 = list(mmap1.measure_to_view_map.get_metrics(datetime.utcnow()))
+    # print("Latency = ", end_ms)
+    # print(metrics1)
 
     queueTimes.put(t2-t1)
     return 0
@@ -171,11 +174,22 @@ def TailSLOThread():
         if len(currTimes) == 0:
             continue
         currentTail = np.percentile(currTimes, 95)
+        currentTailMs = currentTail * 1000 
+        # Record the latency
+        print("Current tail = ", currentTailMs)
+        mmap1.measure_float_put(m_latency_ms, currentTailMs)
+
+        # tmap1.insert(key_method, tag_value_module.TagValue("repl"))
+        # tmap1.insert(key_status, tag_value_module.TagValue("OK"))
+
+        # Insert the tag map finally
+        mmap1.record(tmap1)
         if currentTail > threshold2 * SLO:
-            print("Need to scale out!")
-            # mmap.measure_int_put(prompt_measure, 1)
-            # mmap.record(tmap)
-            # metrics = list(mmap.measure_to_view_map.get_metrics(datetime.utcnow()))
+            # print("Need to scale out!")
+            mmap.measure_int_put(prompt_measure, 1)
+            mmap.record(tmap)
+            metrics = list(mmap.measure_to_view_map.get_metrics(datetime.utcnow()))
+            # print(metrics)
             # print(metrics[0].time_series[0].points[0])
         elif currentTail > threshold1 * SLO:
             print("Need to scale up!")
