@@ -66,7 +66,7 @@ tmap1 = tag_map_module.TagMap()
 # Create the error key
 # key_error = tag_key_module.TagKey("error")
 
-latency_view = view_module.View("demo_latency", "The distribution of the latencies",
+latency_view = view_module.View("latency_"+str(os.environ['WORKLOAD_ID']), "The distribution of the latencies",
     #[key_method, key_status, key_error],
     [],
     m_latency_ms,
@@ -76,7 +76,7 @@ latency_view = view_module.View("demo_latency", "The distribution of the latenci
     aggregation_module.LastValueAggregation())
 
 # exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/')
-exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/')
+exporter = metrics_exporter.new_metrics_exporter(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING']
 
 view_manager.register_view(latency_view)
 view_manager.register_exporter(exporter)
