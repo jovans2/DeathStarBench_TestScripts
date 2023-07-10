@@ -348,6 +348,8 @@ services:
   user-service:
     image: jovanvr97/deathstarbench
     hostname: user-service
+    logging:
+      driver: "none"
     #    ports:
     #      - 10005:9090
     restart: always
