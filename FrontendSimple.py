@@ -76,7 +76,7 @@ latency_view = view_module.View("latency_"+str(os.environ['WORKLOAD_ID']), "The 
     aggregation_module.LastValueAggregation())
 
 # exporter = metrics_exporter.new_metrics_exporter(connection_string='InstrumentationKey=080046f1-79d3-48ce-8abc-1d58acb0504a;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/')
-exporter = metrics_exporter.new_metrics_exporter(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING']
+exporter = metrics_exporter.new_metrics_exporter(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'])
 
 view_manager.register_view(latency_view)
 view_manager.register_exporter(exporter)
