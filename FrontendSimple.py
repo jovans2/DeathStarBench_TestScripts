@@ -177,6 +177,7 @@ def TailSLOThread():
         currentTailMs = currentTail * 1000 
         # Record the latency
         print("Current tail = ", currentTailMs)
+        print(currentTailMs, end="", file="/tmp/tailLat.log", flush=True)
         mmap1.measure_float_put(m_latency_ms, currentTailMs)
 
         # tmap1.insert(key_method, tag_value_module.TagValue("repl"))

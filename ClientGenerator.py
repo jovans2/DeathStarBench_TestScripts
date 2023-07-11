@@ -25,16 +25,18 @@ def EnforceActivityWindow(start_time, end_time, instance_events):
 
 def lambda_call_sgraph(queue_l):
     t1 = time.time()
-    addr = random.choice(addresses)
-    requests.get('http://' + addr + ":9999")
-    t2 = time.time()
-    queue_l.put(t2 - t1)
+    try:
+        addr = random.choice(addresses)
+        requests.get('http://' + addr + ":9999")
+        t2 = time.time()
+        queue_l.put(t2 - t1)
+    except:
+        queue_l.put(1000)
     return 0
 
-duration = 100
+duration = 60
 seed = 100
-rates = [10, 50, 100]
-rate = [250]
+rates = [250]
 
 # generate Poisson's distribution of events
 instance_events_list = []
@@ -45,7 +47,7 @@ for rate in rates:
     inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor * duration * rate)))
     instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
 
-for repetition in range(0, 1):
+for repetition in range(0, 100):
     for instance_events in instance_events_list:
         queue = multiprocessing.Queue()
         print(instance_events_list.index(instance_events))
@@ -60,8 +62,8 @@ for repetition in range(0, 1):
             before_time = time.time()
             if st > 0:
                 time.sleep(st)
-            #thread = threading.Thread(target=lambda_call_sgraph, args=(queue,))
-            thread = multiprocessing.Process(target=lambda_call_sgraph, args=(queue,))
+            thread = threading.Thread(target=lambda_call_sgraph, args=(queue,))
+            # thread = multiprocessing.Process(target=lambda_call_sgraph, args=(queue,))
             thread.start()
             tids.append(thread)
             after_time = time.time()
@@ -70,7 +72,7 @@ for repetition in range(0, 1):
         done = 0
         for tid in tids:
             done += 1
-            tid.join(5)
+            tid.join()
 
         for tid in tids:
             times.append(queue.get())
