@@ -31,6 +31,8 @@ def get_args():
     rps = int(args.rps)
     numRept = int(args.numRept)
 
+get_args()
+
 def EnforceActivityWindow(start_time, end_time, instance_events):
     events_iit = []
     events_abs = [0] + instance_events
