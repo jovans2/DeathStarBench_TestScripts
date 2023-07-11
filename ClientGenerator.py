@@ -29,7 +29,7 @@ def get_args():
     addresses.append(addrGl)
     duration = int(args.duration)
     rps = int(args.rps)
-    numRept = int(args.numRept)
+    numRept = int(args.rept)
 
 get_args()
 
@@ -60,6 +60,8 @@ def lambda_call_sgraph(queue_l):
 
 rates = [rps]
 seed = 100
+
+print(rates)
 
 # generate Poisson's distribution of events
 instance_events_list = []
