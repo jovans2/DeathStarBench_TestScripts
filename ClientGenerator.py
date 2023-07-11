@@ -1,5 +1,6 @@
 import random
 import socket
+import argparse
 import sys
 import numpy as np
 import time
@@ -7,8 +8,28 @@ import multiprocessing
 import threading
 import requests
 
-addrGl = sys.argv[1]
-addresses = [addrGl]
+addresses = []
+duration = 0
+rps = 0
+numRept = 1
+
+def get_args():
+    global duration
+    global rps
+    global addresses
+    global numRept
+    """Parse commandline."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ip", required=True, help="IP address of your service")
+    parser.add_argument("--duration", required=True, help="duration of your experiment")
+    parser.add_argument("--rps", required=True, help="average number of requests per second (Poisson lambda)")
+    parser.add_argument("--rept", default=1, required=False, help="number of repetitions")
+    args = parser.parse_args()
+    addrGl = args.ip
+    addresses.append(addrGl)
+    duration = int(args.duration)
+    rps = int(args.rps)
+    numRept = int(args.numRept)
 
 def EnforceActivityWindow(start_time, end_time, instance_events):
     events_iit = []
@@ -31,12 +52,13 @@ def lambda_call_sgraph(queue_l):
         t2 = time.time()
         queue_l.put(t2 - t1)
     except:
-        queue_l.put(1000)
+        t2 = time.time()
+        queue_l.put(t2-t1)
     return 0
 
-duration = 60
+
+rates = [rps]
 seed = 100
-rates = [250]
 
 # generate Poisson's distribution of events
 instance_events_list = []
@@ -47,11 +69,10 @@ for rate in rates:
     inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor * duration * rate)))
     instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
 
-for repetition in range(0, 100):
+for repetition in range(0, numRept):
     for instance_events in instance_events_list:
         queue = multiprocessing.Queue()
         print(instance_events_list.index(instance_events))
-        #time.sleep(10)
         after_time, before_time = 0, 0
         st = 0
         tids = []
@@ -63,7 +84,6 @@ for repetition in range(0, 100):
             if st > 0:
                 time.sleep(st)
             thread = threading.Thread(target=lambda_call_sgraph, args=(queue,))
-            # thread = multiprocessing.Process(target=lambda_call_sgraph, args=(queue,))
             thread.start()
             tids.append(thread)
             after_time = time.time()
