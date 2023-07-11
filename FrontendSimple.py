@@ -81,6 +81,8 @@ exporter = metrics_exporter.new_metrics_exporter(connection_string=os.environ['A
 view_manager.register_view(latency_view)
 view_manager.register_exporter(exporter)
 
+output_file = open("/tmp/tailLog.log", "a")
+
 def lambda_call_user():
     global addresses
     global queueTimes
@@ -177,7 +179,7 @@ def TailSLOThread():
         currentTailMs = currentTail * 1000 
         # Record the latency
         print("Current tail = ", currentTailMs)
-        print(currentTailMs, end="", file="/tmp/tailLat.log", flush=True)
+        print(currentTailMs, end="", file=output_file, flush=True)
         mmap1.measure_float_put(m_latency_ms, currentTailMs)
 
         # tmap1.insert(key_method, tag_value_module.TagValue("repl"))
