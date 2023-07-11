@@ -48,12 +48,11 @@ def lambda_call_sgraph(queue_l):
     t1 = time.time()
     try:
         addr = random.choice(addresses)
-        requests.get('http://' + addr + ":9999")
+        requests.get('http://' + addr + ":9999", timeout=1)
         t2 = time.time()
         queue_l.put(t2 - t1)
     except:
-        t2 = time.time()
-        queue_l.put(t2-t1)
+        pass
     return 0
 
 
@@ -94,7 +93,7 @@ for repetition in range(0, numRept):
             done += 1
             tid.join()
 
-        for tid in tids:
+        while not queue.empty():
             times.append(queue.get())
 
         print("P50 = ", round(1000 * np.percentile(times, 50), 2), "ms")
