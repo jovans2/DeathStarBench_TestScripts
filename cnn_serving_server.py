@@ -61,7 +61,6 @@ view_manager.register_exporter(exporter)
 '''
 
 def lambda_call_user():
-    # t1 = time.time()
     children = []
     for _ in range(2):
         childPid = os.fork()
@@ -94,9 +93,6 @@ def lambda_call_user():
         i = int(i.asscalar())
         inference = inference + 'With prob = %.5f, it contains %s' % (prob[0, i].asscalar(), labels[i]) + '. '
     '''
-    # t2 = time.time()
-    # print(t2-t1)
-    # queueTimes.put(t2 - t1)
     return 0
 
 
@@ -148,12 +144,8 @@ def HealthThread():
 def TailSLOThread():
     global queueTimes
 
-    SLO = 0.15
-    threshold1 = 0.7
-    threshold2 = 0.8
     while True:
         time.sleep(5)
-        print("Wake up")
         currTimes = []
         lockQueue.acquire()
         while not queueTimes.empty():
@@ -170,16 +162,11 @@ def TailSLOThread():
 
         # Insert the tag map finally
         mmap1.record(tmap1)
-        if currentTail > threshold2 * SLO:
-            mmap.measure_int_put(prompt_measure, 1)
-            mmap.record(tmap)
-        
-        elif currentTail > threshold1 * SLO:
-            print("Need to scale up!")
         '''
 
 def serveRequest(clientSocket):
     global queueTimes
+
     t1 = time.time()
     childPid = os.fork()
     if childPid == 0:
