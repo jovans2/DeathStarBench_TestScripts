@@ -168,6 +168,7 @@ def TailSLOThread():
     while True:
         time.sleep(2)
         currTimes = []
+        print("Wake up")
         while not queueTimes.empty():
             currTimes.append(queueTimes.get())
         if len(currTimes) == 0:
