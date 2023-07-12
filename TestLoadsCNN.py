@@ -80,6 +80,7 @@ for rate in rates:
     instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
 
 for repetition in range(0, numRept):
+    time.sleep(300)
     for instance_events in instance_events_list:
         queue = multiprocessing.Queue()
         print(instance_events_list.index(instance_events))
