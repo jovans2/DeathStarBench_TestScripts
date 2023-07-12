@@ -7,6 +7,7 @@ import threading
 import sys
 
 import multiprocessing
+import queue
 import time
 import numpy as np
 
@@ -17,39 +18,19 @@ from opencensus.stats import view as view_module
 from opencensus.tags import tag_map as tag_map_module
 from opencensus.ext.azure import metrics_exporter
 
-def EnforceActivityWindow(start_time, end_time, instance_events):
-    events_iit = []
-    events_abs = [0] + instance_events
-    event_times = [sum(events_abs[:i]) for i in range(1, len(events_abs) + 1)]
-    event_times = [e for e in event_times if (e > start_time) and (e < end_time)]
-    try:
-        events_iit = [event_times[0]] + [event_times[i] - event_times[i - 1]
-                                         for i in range(1, len(event_times))]
-    except:
-        pass
-    return events_iit
-
-duration = 100
-seed = 100
-rates = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
-# generate Poisson's distribution of events
-instance_events_list = []
-for rate in rates:
-    np.random.seed(seed)
-    beta = 1.0 / rate
-    oversampling_factor = 2
-    inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor * duration * rate)))
-    instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
-
-net = gluon.model_zoo.vision.resnet50_v1(pretrained=True, root = '/tmp/')
-net.hybridize(static_alloc=True, static_shape=True)
+# t1 = time.time()
+# net = gluon.model_zoo.vision.resnet50_v1(pretrained=True, root = '/tmp/')
+# net.hybridize(static_alloc=True, static_shape=True)
+# t2 = time.time()
+# print("Time = ", t2-t1)
 lblPath = gluon.utils.download('http://data.mxnet.io/models/imagenet/synset.txt',path='/tmp/')
 with open(lblPath, 'r') as f:
     labels = [l.rstrip() for l in f]
 blobName = "img10.jpg"
 imgGl = mx.image.imread(blobName)
 
-queueTimes = multiprocessing.Queue()
+queueTimes = queue.Queue()
+lockQueue = threading.Lock()
 
 m_latency_ms = measure_module.MeasureFloat("repl/latency", "The latency in milliseconds per DSB request", "ms")
 
@@ -67,6 +48,7 @@ tmap = tag_map_module.TagMap()
 mmap1 = stats_recorder.new_measurement_map()
 tmap1 = tag_map_module.TagMap()
 
+'''
 latency_view = view_module.View("latency_" + str(os.environ['WORKLOAD_ID']), "The distribution of the latencies",
                                 [],
                                 m_latency_ms,
@@ -76,28 +58,45 @@ exporter = metrics_exporter.new_metrics_exporter(connection_string=os.environ['A
 
 view_manager.register_view(latency_view)
 view_manager.register_exporter(exporter)
-
+'''
 
 def lambda_call_user():
-    t1 = time.time()
-
-    img = imgGl
-    img = mx.image.imresize(img, 224, 224)  # resize
-    img = mx.image.color_normalize(img.astype(dtype='float32') / 255,
+    # t1 = time.time()
+    children = []
+    for _ in range(2):
+        childPid = os.fork()
+        if childPid == 0:
+            for _ in range(300):
+                img = imgGl
+                img = mx.image.imresize(img, 224, 224)  # resize
+                img = mx.image.color_normalize(img.astype(dtype='float32') / 255,
                                    mean=mx.nd.array([0.485, 0.456, 0.406]),
                                    std=mx.nd.array([0.229, 0.224, 0.225]))  # normalize
-    img = img.transpose((2, 0, 1))  # channel first
-    img = img.expand_dims(axis=0)  # batchify
+                img = img.transpose((2, 0, 1))  # channel first
+                img = img.expand_dims(axis=0)  # batchify
+            os._exit(os.EX_OK)
+        else:
+            children.append(childPid)
+    for child in children:
+        try:
+            os.waitpid(child, 0)
+        except:
+            pass
 
+    '''
+    net = gluon.model_zoo.vision.resnet50_v1(pretrained=True, root = '/tmp/')
+    net.hybridize(static_alloc=True, static_shape=True)
+    
     prob = net(img).softmax()  # predict and normalize output
     idx = prob.topk(k=5)[0]  # get top 5 result
     inference = ''
     for i in idx:
         i = int(i.asscalar())
         inference = inference + 'With prob = %.5f, it contains %s' % (prob[0, i].asscalar(), labels[i]) + '. '
-
-    t2 = time.time()
-    queueTimes.put(t2 - t1)
+    '''
+    # t2 = time.time()
+    # print(t2-t1)
+    # queueTimes.put(t2 - t1)
     return 0
 
 
@@ -153,16 +152,20 @@ def TailSLOThread():
     threshold1 = 0.7
     threshold2 = 0.8
     while True:
-        time.sleep(2)
+        time.sleep(5)
+        print("Wake up")
         currTimes = []
+        lockQueue.acquire()
         while not queueTimes.empty():
             currTimes.append(queueTimes.get())
+        lockQueue.release()
         if len(currTimes) == 0:
             continue
         currentTail = np.percentile(currTimes, 95)
         currentTailMs = currentTail * 1000
         # Record the latency
         print("Current tail = ", currentTailMs)
+        '''
         mmap1.measure_float_put(m_latency_ms, currentTailMs)
 
         # Insert the tag map finally
@@ -170,14 +173,29 @@ def TailSLOThread():
         if currentTail > threshold2 * SLO:
             mmap.measure_int_put(prompt_measure, 1)
             mmap.record(tmap)
+        
         elif currentTail > threshold1 * SLO:
             print("Need to scale up!")
-
+        '''
 
 def serveRequest(clientSocket):
-    clientSocket.recv(1024)
-    lambda_call_user()
-    sendOK(clientSocket)
+    global queueTimes
+    t1 = time.time()
+    childPid = os.fork()
+    if childPid == 0:
+        clientSocket.recv(1024)
+        lambda_call_user()
+        sendOK(clientSocket)
+        os._exit(os.EX_OK)
+    else:
+        try:
+            os.waitpid(childPid, 0)
+        except:
+            pass
+    t2 = time.time()
+    lockQueue.acquire()
+    queueTimes.put(t2-t1)
+    lockQueue.release()
     return 0
 
 
@@ -198,8 +216,8 @@ def run():
     signal.signal(signal.SIGINT, signal_handler)
 
     # Set the thread for Health Check
-    threadHealth = threading.Thread(target=HealthThread)
-    threadHealth.start()
+    # threadHealth = threading.Thread(target=HealthThread)
+    # threadHealth.start()
 
     # Set the thread for Tail Latency monitoring
     threadTailSLO = threading.Thread(target=TailSLOThread)
