@@ -9,6 +9,7 @@ import random
 import string
 import docker
 import multiprocessing
+import queue
 import time
 import numpy as np
 import requests
@@ -39,7 +40,7 @@ for service in services:
     container = client.containers.get(service)
     ip_add = container.attrs['NetworkSettings']['Networks']['socialnetwork_default']['IPAddress']
     addresses[service] = ip_add
-queueTimes = multiprocessing.Queue()
+queueTimes = queue.Queue()
 
 m_latency_ms = measure_module.MeasureFloat("repl/latency", "The latency in milliseconds per DSB request", "ms")
 
@@ -72,7 +73,6 @@ toBeTerminated = False
 
 def lambda_call_user():
     global addresses
-    global queueTimes
     
     t1 = time.time()
     address = addresses[random.choice(services)]
@@ -90,7 +90,6 @@ def lambda_call_user():
     transport.close()
     t2 = time.time()
 
-    queueTimes.put(t2-t1)
     return 0
 
 def signal_handler(sig, frame):
@@ -198,6 +197,8 @@ def EventCheckThread():
                     toBeTerminated = True
 
 def serveRequest(clientSocket):
+    global queueTimes
+    t1 = time.time()
     childPid = os.fork()
     if childPid == 0:
         clientSocket.recv(1024)
@@ -207,6 +208,8 @@ def serveRequest(clientSocket):
     else:
         try:
             os.waitpid(childPid, 0)
+            t2 = time.time()
+            queueTimes.put(t2-t1)
         except:
             pass
     return 0
