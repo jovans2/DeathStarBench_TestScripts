@@ -13,6 +13,7 @@ duration = 0
 rps = 0
 numRept = 1
 timeoutTime = 1
+portLoc = "9999"
 
 def get_args():
     global duration
@@ -20,6 +21,7 @@ def get_args():
     global addresses
     global numRept
     global timeoutTime
+    global portLoc
     """Parse commandline."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip", required=True, help="IP address of your service")
@@ -27,6 +29,7 @@ def get_args():
     parser.add_argument("--rps", required=True, help="average number of requests per second (Poisson lambda)")
     parser.add_argument("--rept", default=1, required=False, help="number of repetitions")
     parser.add_argument("--timeout", default=1, required=False, help="timeout for requests")
+    parser.add_argument("--portService", default="9999", required=False, help="port to send requests to")
     args = parser.parse_args()
     addrGl = args.ip
     addresses.append(addrGl)
@@ -34,6 +37,7 @@ def get_args():
     rps = int(args.rps)
     numRept = int(args.rept)
     timeoutTime = int(args.timeout)
+    portLoc = args.portService
 
 get_args()
 
@@ -55,7 +59,7 @@ def lambda_call_sgraph(queue_l):
     t1 = time.time()
     try:
         addr = random.choice(addresses)
-        requests.get('http://' + addr + ":9999", timeout=timeoutTime)
+        requests.get('http://' + addr + ":" + portLoc, timeout=timeoutTime)
         t2 = time.time()
         queue_l.put(t2 - t1)
     except:
