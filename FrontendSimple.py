@@ -41,6 +41,7 @@ for service in services:
     ip_add = container.attrs['NetworkSettings']['Networks']['socialnetwork_default']['IPAddress']
     addresses[service] = ip_add
 queueTimes = queue.Queue()
+lockQueue = threading.Lock()
 
 m_latency_ms = measure_module.MeasureFloat("repl/latency", "The latency in milliseconds per DSB request", "ms")
 
@@ -169,8 +170,10 @@ def TailSLOThread():
         time.sleep(2)
         currTimes = []
         print("Wake up")
+        lockQueue.acquire()
         while not queueTimes.empty():
             currTimes.append(queueTimes.get())
+        lockQueue.release()
         if len(currTimes) == 0:
             continue
         currentTail = np.percentile(currTimes, 95)
@@ -210,7 +213,9 @@ def serveRequest(clientSocket):
         try:
             os.waitpid(childPid, 0)
             t2 = time.time()
+            lockQueue.acquire()
             queueTimes.put(t2-t1)
+            lockQueue.release()
         except:
             pass
     return 0
