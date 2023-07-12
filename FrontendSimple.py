@@ -34,6 +34,12 @@ from opencensus.ext.azure import metrics_exporter
 
 services = ["socialnetwork_user-service_1"]
 
+headers_l = {'Metadata': 'True'}
+query_params_l = {'api-version': '2019-06-01'}
+endpoint_l = "http://169.254.169.254/metadata/instance"
+rsp_l = requests.get(endpoint_l, headers=headers_l, params=query_params_l).json()
+my_name = rsp_l["compute"]["name"]
+
 addresses = {}
 for service in services:
     client = docker.DockerClient()
@@ -197,7 +203,7 @@ def EventCheckThread():
         rcvEvents = rsp["Events"]
         if len(rcvEvents) > 0:
             for event in rcvEvents:
-                if event["EventType"] == "Terminate":
+                if (event["EventType"] == "Terminate") and (my_name in event["Resources"]):
                     toBeTerminated = True
 
 def serveRequest(clientSocket):
