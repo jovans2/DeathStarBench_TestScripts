@@ -1,17 +1,19 @@
 import random
-import socket
 import argparse
-import sys
+import os
 import numpy as np
 import time
-import multiprocessing
+import queue
 import threading
 import requests
+
+t1 = time.time()
 
 addresses = []
 duration = 0
 rps = 0
-numRept = 1
+numRept = 5
+clientID = int(os.environ['WORKLOAD_ID'][-3:])
 timeoutTime = 1
 portLoc = "9999"
 
@@ -25,9 +27,9 @@ def get_args():
     """Parse commandline."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip", required=True, help="IP address of your service")
-    parser.add_argument("--duration", required=True, help="duration of your experiment")
-    parser.add_argument("--rps", required=True, help="average number of requests per second (Poisson lambda)")
-    parser.add_argument("--rept", default=1, required=False, help="number of repetitions")
+    parser.add_argument("--duration", default=60, help="duration of your experiment")
+    parser.add_argument("--rps", default=100, help="average number of requests per second (Poisson lambda)")
+    parser.add_argument("--rept", default=5, required=False, help="number of repetitions")
     parser.add_argument("--timeout", default=1, required=False, help="timeout for requests")
     parser.add_argument("--portService", default="9999", required=False, help="port to send requests to")
     args = parser.parse_args()
@@ -56,21 +58,24 @@ def EnforceActivityWindow(start_time, end_time, instance_events):
 
 def lambda_call_sgraph(queue_l):
     global timeoutTime
-    t1 = time.time()
+    t11 = time.time()
     try:
         addr = random.choice(addresses)
         requests.get('http://' + addr + ":" + portLoc, timeout=timeoutTime)
-        t2 = time.time()
-        queue_l.put(t2 - t1)
+        t21 = time.time()
+        queue_l.put(t21 - t11)
     except:
         pass
     return 0
 
 
-rates = [rps]
+rates = []
+fTrace = open("traces/trace_"+str(clientID)+".txt", "r")
+lines = fTrace.readlines()
+for line in lines:
+    rates.append(int(line))
+fTrace.close()
 seed = 100
-
-print(rates)
 
 # generate Poisson's distribution of events
 instance_events_list = []
@@ -81,9 +86,13 @@ for rate in rates:
     inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor * duration * rate)))
     instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
 
+t2 = time.time()
+if (t2-t1) < 30*60:
+    time.sleep((30*60)-(t1+t2))
+
 for repetition in range(0, numRept):
     for instance_events in instance_events_list:
-        queue = multiprocessing.Queue()
+        queueV = queue.Queue()
         print(instance_events_list.index(instance_events))
         after_time, before_time = 0, 0
         st = 0
@@ -95,7 +104,7 @@ for repetition in range(0, numRept):
             before_time = time.time()
             if st > 0:
                 time.sleep(st)
-            thread = threading.Thread(target=lambda_call_sgraph, args=(queue,))
+            thread = threading.Thread(target=lambda_call_sgraph, args=(queueV,))
             thread.start()
             tids.append(thread)
             after_time = time.time()
@@ -106,8 +115,8 @@ for repetition in range(0, numRept):
             done += 1
             tid.join()
 
-        while not queue.empty():
-            times.append(queue.get())
+        while not queueV.empty():
+            times.append(queueV.get())
 
         print("P50 = ", round(1000 * np.percentile(times, 50), 2), "ms")
         print("P90 = ", round(1000 * np.percentile(times, 90), 2), "ms")
@@ -118,10 +127,4 @@ Add Readme for experiment details:
     how many VMs of each type we need
     how to trigger load
     etc.
-
-loads = [10, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275]
-tail_42GHz = [75.09, 80.42, 88.990, 119.72, 133.83, 137.02, 139.68, 140.91, 143.76, 155.01, 217.94, 6227.24]
-tail_39GHz = [81.40, 84.84, 109.60, 124.13, 134.90, 141.02, 142.85, 144.31, 146.40, 159.10, 464.59, 5595.13]
-tail_35GHz = [87.78, 93.12, 129.80, 151.67, 158.45, 161.56, 163.15, 166.21, 171.64, 240.43, 5183.16, 14180]
-tail_33GHz = [91.67, 99.92, 156.61, 171.63, 173.42, 174.23, 176.03, 178.51, 185.47, 617.17, 5318.13, 22105]
 '''
