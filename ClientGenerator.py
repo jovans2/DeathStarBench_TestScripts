@@ -107,9 +107,9 @@ else:
         time.sleep((30*60)-(t1+t2))
 
 for instance_events in instance_events_list:
+    print(instance_events_list.index(instance_events))
     for repetition in range(0, numRept):
         queueV = queue.Queue()
-        print(instance_events_list.index(instance_events))
         after_time, before_time = 0, 0
         st = 0
         tids = []
