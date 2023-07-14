@@ -6,18 +6,14 @@ import sys
 sys.path.append('../gen-py')
 import uuid
 import random
-import string
 import docker
-import multiprocessing
 import queue
 import time
 import numpy as np
 import requests
 
-from social_network import SocialGraphService
 from social_network import UserService
 
-from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -27,9 +23,6 @@ from opencensus.stats import measure as measure_module
 from opencensus.stats import stats as stats_module
 from opencensus.stats import view as view_module
 from opencensus.tags import tag_map as tag_map_module
-from opencensus.tags import tag_key as tag_key_module
-from opencensus.tags import tag_value as tag_value_module
-from datetime import datetime
 from opencensus.ext.azure import metrics_exporter
 
 services = ["socialnetwork_user-service_1"]

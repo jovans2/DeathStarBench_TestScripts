@@ -6,6 +6,7 @@ import time
 import queue
 import threading
 import requests
+import datetime
 
 t1 = time.time()
 
@@ -15,6 +16,7 @@ rps = 0
 numRept = 5
 clientID = int(os.environ['WORKLOAD_ID'][-3:])
 timeoutTime = 1
+startTime = None
 portLoc = "9999"
 
 def get_args():
@@ -24,6 +26,7 @@ def get_args():
     global numRept
     global timeoutTime
     global portLoc
+    global startTime
     """Parse commandline."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip", required=True, help="IP address of your service")
@@ -32,6 +35,7 @@ def get_args():
     parser.add_argument("--rept", default=5, required=False, help="number of repetitions")
     parser.add_argument("--timeout", default=1, required=False, help="timeout for requests")
     parser.add_argument("--portService", default="9999", required=False, help="port to send requests to")
+    parser.add_argument("--start", default=None, required=False, help="when to start experiment")
     args = parser.parse_args()
     addrGl = args.ip
     addresses.append(addrGl)
@@ -40,6 +44,7 @@ def get_args():
     numRept = int(args.rept)
     timeoutTime = int(args.timeout)
     portLoc = args.portService
+    startTime = args.start
 
 get_args()
 
@@ -68,7 +73,6 @@ def lambda_call_sgraph(queue_l):
         pass
     return 0
 
-
 rates = []
 fTrace = open("traces/trace_"+str(clientID)+".txt", "r")
 lines = fTrace.readlines()
@@ -86,12 +90,24 @@ for rate in rates:
     inter_arrivals = list(np.random.exponential(scale=beta, size=int(oversampling_factor * duration * rate)))
     instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
 
-t2 = time.time()
-if (t2-t1) < 30*60:
-    time.sleep((30*60)-(t1+t2))
+if startTime is not None:
+    now = datetime.datetime.now()
+    year = datetime.datetime.now().date().year
+    month = datetime.datetime.now().date().month
+    day = datetime.datetime.now().date().day
+    hour = int(startTime.split(":")[0])
+    minute = int(startTime.split(":")[1])
+    future = datetime.datetime(year, month, day, hour, minute)
+    while now < future:
+        time.sleep(5)
+        now = datetime.datetime.now()
+else:
+    t2 = time.time()
+    if (t2-t1) < 30*60:
+        time.sleep((30*60)-(t1+t2))
 
-for repetition in range(0, numRept):
-    for instance_events in instance_events_list:
+for instance_events in instance_events_list:
+    for repetition in range(0, numRept):
         queueV = queue.Queue()
         print(instance_events_list.index(instance_events))
         after_time, before_time = 0, 0
@@ -118,9 +134,12 @@ for repetition in range(0, numRept):
         while not queueV.empty():
             times.append(queueV.get())
 
-        print("P50 = ", round(1000 * np.percentile(times, 50), 2), "ms")
-        print("P90 = ", round(1000 * np.percentile(times, 90), 2), "ms")
-        print("P99 = ", round(1000 * np.percentile(times, 99), 2), "ms")
+        try:
+            print("P50 = ", round(1000 * np.percentile(times, 50), 2), "ms")
+            print("P90 = ", round(1000 * np.percentile(times, 90), 2), "ms")
+            print("P99 = ", round(1000 * np.percentile(times, 99), 2), "ms")
+        except:
+            print("No responses")
 
 '''
 Add Readme for experiment details:
