@@ -61,6 +61,6 @@ def printLatencies():
 if __name__ == '__main__':
     stThr = threading.Thread(target=printLatencies)
     stThr.start()
-    for _ in range(92):
+    for _ in range(90):
         threading.Thread(target=serve).start()
     stThr.join()
