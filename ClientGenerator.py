@@ -91,16 +91,17 @@ for rate in rates:
     instance_events_list.append(EnforceActivityWindow(0, duration, inter_arrivals))
 
 if startTime is not None:
-    now = datetime.datetime.now()
-    year = datetime.datetime.now().date().year
-    month = datetime.datetime.now().date().month
-    day = datetime.datetime.now().date().day
-    hour = int(startTime.split(":")[0])
-    minute = int(startTime.split(":")[1])
-    future = datetime.datetime(year, month, day, hour, minute)
-    while now < future:
-        time.sleep(5)
+    if startTime != "0":
         now = datetime.datetime.now()
+        year = datetime.datetime.now().date().year
+        month = datetime.datetime.now().date().month
+        day = datetime.datetime.now().date().day
+        hour = int(startTime.split(":")[0])
+        minute = int(startTime.split(":")[1])
+        future = datetime.datetime(year, month, day, hour, minute)
+        while now < future:
+            time.sleep(5)
+            now = datetime.datetime.now()
 else:
     t2 = time.time()
     if (t2-t1) < 30*60:
