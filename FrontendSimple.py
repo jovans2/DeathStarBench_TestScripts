@@ -80,8 +80,7 @@ toBeTerminated = False
 
 def lambda_call_user():
     global addresses
-    
-    t1 = time.time()
+
     address = addresses[random.choice(services)]
     socketC = TSocket.TSocket(address, 9090)
     transport = TTransport.TFramedTransport(socketC)
@@ -95,7 +94,6 @@ def lambda_call_user():
     clientC.Login(req_id, "user_"+str(follower), "pass_"+str(follower), {})
 
     transport.close()
-    t2 = time.time()
 
     return 0
 
@@ -175,7 +173,6 @@ def TailSLOThread():
     while True:
         time.sleep(2)
         currTimes = []
-        print("Wake up")
         lockQueue.acquire()
         while not queueTimes.empty():
             currTimes.append(queueTimes.get())
